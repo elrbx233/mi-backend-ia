@@ -1,7 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const fetch = (...args) =>
-  import('node-fetch').then(({default: fetch}) => fetch(...args));
+const fetch = require('node-fetch');
 
 const app = express();
 app.use(cors());
@@ -31,10 +30,30 @@ app.post('/preguntar', async (req, res) => {
     });
 
     const data = await respuesta.json();
+
+    // Si la respuesta no tiene 'choices' válidos
+    if (!data.choices || !data.choices[0]) {
+      console.error("Respuesta inválida de OpenAI:", data);
+      return res.status(500).json({
+        error: "Respuesta inválida de OpenAI",
+        detalle: data
+      });
+    }
+
     res.json({ respuesta: data.choices[0].message.content });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).send("Error con OpenAI");
+    console.error("Error al comunicar con OpenAI:", err);
+    try {
+      const text = await respuesta.text?.(); // fallback si .json falla
+      return res.status(500).json({
+        mensaje: "Error inesperado al llamar a OpenAI",
+        error: err.message,
+        textoDevuelto: text
+      });
+    } catch {
+      return res.status(500).send("Fallo al procesar respuesta de OpenAI.");
+    }
   }
 });
 
