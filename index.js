@@ -1,6 +1,8 @@
-const express = require('express');
-const cors = require('cors');
-const fetch = require('node-fetch');
+import express from 'express';
+import cors from 'cors';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -31,31 +33,17 @@ app.post('/preguntar', async (req, res) => {
 
     const data = await respuesta.json();
 
-    // Si la respuesta no tiene 'choices' válidos
     if (!data.choices || !data.choices[0]) {
       console.error("Respuesta inválida de OpenAI:", data);
-      return res.status(500).json({
-        error: "Respuesta inválida de OpenAI",
-        detalle: data
-      });
+      return res.status(500).send("Falló al procesar respuesta de OpenAI.");
     }
 
     res.json({ respuesta: data.choices[0].message.content });
-
   } catch (err) {
-    console.error("Error al comunicar con OpenAI:", err);
-    try {
-      const text = await respuesta.text?.(); // fallback si .json falla
-      return res.status(500).json({
-        mensaje: "Error inesperado al llamar a OpenAI",
-        error: err.message,
-        textoDevuelto: text
-      });
-    } catch {
-      return res.status(500).send("Fallo al procesar respuesta de OpenAI.");
-    }
+    console.error("Error al comunicar con OpenAI:", err.message);
+    res.status(500).send("Error con OpenAI");
   }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`Servidor en puerto ${PORT}`));
